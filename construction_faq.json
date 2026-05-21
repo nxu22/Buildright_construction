@@ -1,0 +1,64 @@
+{
+  "questions": [
+    {
+      "question": "Which cities do you serve?",
+      "answer": "We currently serve the Greater Toronto Area including Toronto, Mississauga, Brampton, Oakville, Burlington, and Hamilton. We also take select projects in Vaughan, Richmond Hill, and Markham. Not sure if we cover your area? Send us your postal code and we'll confirm."
+    },
+    {
+      "question": "Is the initial quote or consultation free?",
+      "answer": "Yes, our initial consultation and written estimate are completely free. One of our project managers will visit your home, assess the scope of work, and provide a detailed quote within 48 hours — no obligation."
+    },
+    {
+      "question": "How long does a kitchen renovation take?",
+      "answer": "A standard kitchen renovation typically takes 3 to 6 weeks depending on the scope. A cabinet refresh and countertop replacement can be done in 2 weeks, while a full gut renovation with layout changes takes 5–7 weeks. We'll give you a timeline in your quote."
+    },
+    {
+      "question": "How long does a bathroom renovation take?",
+      "answer": "Most bathroom renovations take 1 to 3 weeks. A simple refresh (new fixtures, tile, vanity) takes about 7–10 days. A full bathroom gut and rebuild including plumbing relocation typically takes 2–3 weeks."
+    },
+    {
+      "question": "How does payment work? Do you require a deposit?",
+      "answer": "We use a 3-stage payment structure: 30% deposit to confirm your project and order materials, 40% at the midpoint when rough work is complete, and the final 30% upon project completion and your approval. We accept bank transfer, cheque, and major credit cards."
+    },
+    {
+      "question": "Do you offer a warranty on your work?",
+      "answer": "Yes. All our workmanship is covered by a 2-year labour warranty. Structural work carries a 5-year warranty. Materials are covered by their respective manufacturer warranties, which we help you register. If anything is not right after we finish, we come back and fix it at no charge."
+    },
+    {
+      "question": "Do I need to obtain permits myself?",
+      "answer": "No — we handle all permits on your behalf. Our team pulls the necessary building permits for structural, electrical, and plumbing work. Permit costs are included in our quote so there are no surprises. We also manage all required inspections."
+    },
+    {
+      "question": "Do you supply the materials, or do I buy them myself?",
+      "answer": "We offer both options. Most clients choose our supply-and-install service where we source all materials — we get trade pricing and pass some of those savings on to you. If you prefer to supply your own materials (e.g., custom tiles or fixtures you've already purchased), we're happy to do install-only. We'll advise on specs so everything fits correctly."
+    },
+    {
+      "question": "Can I stay in my home during the renovation?",
+      "answer": "It depends on the scope. For single-room renovations like a kitchen or bathroom, most clients stay home — we seal off the work area and clean up daily. For whole-home renovations, we recommend temporary relocation for 2–4 weeks for your comfort and to let us work more efficiently. We'll advise you during the consultation."
+    },
+    {
+      "question": "Are you licensed and insured?",
+      "answer": "Yes. BuildRight Renovations is a fully licensed general contractor in Ontario (HCRA registered). We carry $5 million in general liability insurance and full WSIB coverage for all workers on site. We're happy to provide proof of insurance before any work begins."
+    },
+    {
+      "question": "Can I see examples of your previous projects?",
+      "answer": "Absolutely. We have a full portfolio on our website with before-and-after photos organized by project type. We can also arrange for you to speak with past clients as references, and in some cases visit a recently completed project. Just ask your project manager."
+    },
+    {
+      "question": "What types of renovation projects do you handle?",
+      "answer": "We specialize in residential renovations: kitchens, bathrooms, basements, additions, and whole-home renovations. We also do flooring, painting, deck building, and interior carpentry. We do not currently take on new construction or commercial projects."
+    },
+    {
+      "question": "What happens if unexpected problems are found during construction?",
+      "answer": "It happens — especially in older homes (hidden water damage, outdated wiring, etc.). When we find something unexpected, we stop work, document it with photos, and contact you immediately with a change order that explains the issue and the added cost before we proceed. You always approve additional costs before work continues."
+    },
+    {
+      "question": "How accurate is your initial estimate?",
+      "answer": "Our estimates are based on a site visit and are typically within 10% of the final cost. The main reasons for cost changes are scope additions requested by the client or unforeseen conditions hidden inside walls or floors. We price honestly — we'd rather give you a realistic number upfront than a low quote and surprise you later."
+    },
+    {
+      "question": "How do I get started or book a consultation?",
+      "answer": "The easiest way is to fill out the contact form on this page — leave your name, email, and a brief description of your project. We'll follow up within one business day to schedule your free in-home consultation. You can also call us directly at (416) 555-0192."
+    }
+  ]
+}

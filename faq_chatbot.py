@@ -1,7 +1,6 @@
 """
-E-commerce FAQ Chatbot
-A conversational AI assistant that answers frequently asked questions about e-commerce operations
-using LangChain, ChromaDB vector store, and Anthropic Claude LLM.
+BuildRight Renovations — FAQ Chatbot
+Conversational AI assistant for renovation inquiries using LangChain, ChromaDB, and Claude.
 """
 
 import os
@@ -19,7 +18,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 
 
-class EcommerceFAQChatbot:
+class BuildRightChatbot:
     """
     FAQ Chatbot for E-commerce platform using RAG (Retrieval-Augmented Generation)
     """
@@ -32,7 +31,7 @@ class EcommerceFAQChatbot:
             data_path: Path to the JSON file containing FAQ data
             api_key: Anthropic API key (optional, can be loaded from .env)
         """
-        print("🚀 Initializing E-commerce FAQ Chatbot...")
+        print("🚀 Initializing BuildRight Chatbot...")
         
         # Load environment variables
         load_dotenv()
@@ -104,12 +103,10 @@ class EcommerceFAQChatbot:
         """Create the Question-Answering chain with custom prompt"""
         
         # Custom prompt template
-        template = """You are a helpful e-commerce customer support assistant. 
-Your role is to answer customer questions based on the FAQ information provided.
+        template = """You are a friendly and professional customer service assistant for BuildRight Renovations, a residential renovation company in the Greater Toronto Area.
 
-Use the following FAQ context to answer the customer's question. 
-If the answer is not in the context, politely say that you don't have that specific information 
-and suggest they contact customer support for personalized assistance.
+Use the following FAQ context to answer the customer's question accurately.
+If the answer is not in the context, politely say you don't have that specific detail and suggest they book a free consultation.
 
 Context:
 {context}
@@ -168,6 +165,85 @@ Helpful Answer:"""
         """Export FAQ data to pandas DataFrame for analysis"""
         return pd.DataFrame(self.faq_data)
     
+    def estimate_quote(self, project_type: str, sqft: float, tier: str) -> dict:
+        """
+        Calculate a rough renovation estimate.
+        project_type: kitchen | bathroom | basement | full_renovation
+        tier: basic | standard | premium
+        """
+        base_rates = {
+            "kitchen": 150,
+            "bathroom": 200,
+            "basement": 80,
+            "full_renovation": 120,
+        }
+        multipliers = {"basic": 1.0, "standard": 1.4, "premium": 2.0}
+
+        rate = base_rates.get(project_type.lower().replace(" ", "_"))
+        mult = multipliers.get(tier.lower(), 1.0)
+        if rate is None:
+            return {"error": f"Unknown project type: {project_type}"}
+
+        mid = rate * sqft * mult
+        low = round(mid * 0.85, -2)   # round to nearest 100
+        high = round(mid * 1.15, -2)
+        return {
+            "project_type": project_type,
+            "sqft": sqft,
+            "tier": tier,
+            "low": int(low),
+            "high": int(high),
+            "currency": "CAD",
+        }
+
+    def chat_with_history(self, user_message: str, conversation_history: list) -> dict:
+        """
+        对话式问答，支持多轮历史记忆
+
+        conversation_history 格式:
+        [
+            {"role": "assistant", "content": "你好！请问..."},
+            {"role": "user", "content": "我的订单没收到"},
+            ...
+        ]
+        """
+        # 1. 用 RAG 检索相关 FAQ（用最新一条用户消息检索）
+        docs = self.vectorstore.similarity_search(user_message, k=3)
+        context = "\n".join([doc.page_content for doc in docs])
+
+        # 2. 把对话历史格式化成字符串
+        history_text = ""
+        for msg in conversation_history[-6:]:  # 只保留最近6条，控制 token
+            role = "客户" if msg["role"] == "user" else "客服"
+            history_text += f"{role}: {msg['content']}\n"
+
+        # 3. 构建 prompt
+        prompt = f"""You are a friendly and professional customer service assistant for BuildRight Renovations, a residential renovation company in the Greater Toronto Area. You help potential clients get information and book consultations.
+
+Your approach:
+1. Guide the conversation with one question at a time
+2. When someone asks about cost or pricing, ask for: project type, approximate size (sq ft), and preferred material tier (Basic / Standard / Premium)
+3. Once you have enough info, give a clear answer or estimated price range
+4. When the conversation is wrapping up, ask for the client's name and email so the team can follow up
+
+Use this FAQ knowledge to answer questions:
+{context}
+
+Conversation so far:
+{history_text}
+Client: {user_message}
+
+Reply naturally and helpfully. Ask only one question at a time. Respond in the same language the client uses."""
+
+        # 4. 调用 Claude
+        from langchain.schema import HumanMessage
+        response = self.llm.invoke([HumanMessage(content=prompt)])
+
+        return {
+            "answer": response.content,
+            "source_questions": [doc.metadata.get("question", "") for doc in docs]
+        }
+
     def chat(self):
         """Start interactive chat session"""
         print("="*70)

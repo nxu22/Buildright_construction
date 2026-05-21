@@ -1,16 +1,12 @@
-# Core LangChain and LLM dependencies
+anthropic>=0.41.0
 langchain==0.3.13
 langchain-anthropic==0.3.3
 langchain-community==0.3.13
-anthropic>=0.41.0
-
-# Vector store and embeddings
 chromadb==0.5.23
 sentence-transformers==3.3.1
-
-# Data handling
 pandas==2.2.3
-numpy==1.26.4
-
-# Utilities
 python-dotenv==1.0.1
+fastapi==0.115.0
+uvicorn==0.30.0
+pydantic>=2.7.4
+resend
