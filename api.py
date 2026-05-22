@@ -15,29 +15,29 @@ load_dotenv()
 
 app = FastAPI(title="BuildRight Renovations Chatbot API")
 
-# CORS — 允许前端访问
+# CORS — allow frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 部署后改成你的 Netlify 域名
+    allow_origins=["*"],  # change to your Netlify domain after deploy
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 启动时初始化一次 chatbot（避免每次请求都重新加载）
+# initialize chatbot once at startup
 from faq_chatbot import BuildRightChatbot
 
-print("正在初始化聊天机器人...")
+print("Initializing chatbot...")
 chatbot = BuildRightChatbot(
     data_path="construction_faq.json"
 )
-print("初始化完成！")
+print("Chatbot ready.")
 
 
-# ── 数据模型 ──────────────────────────────────────
+# ── Data models ──────────────────────────────────────
 
 class Message(BaseModel):
-    role: str   # "user" 或 "assistant"
+    role: str   # "user" or "assistant"
     content: str
 
 class ChatRequest(BaseModel):
@@ -59,7 +59,7 @@ class QuoteRequest(BaseModel):
     tier: str           # basic | standard | premium
 
 
-# ── 路由 ──────────────────────────────────────────
+# ── Routes ──────────────────────────────────────────
 
 @app.get("/")
 def root():
@@ -71,7 +71,7 @@ def health():
 
 @app.post("/chat")
 def chat(req: ChatRequest):
-    """主要对话接口"""
+    """Main chat endpoint"""
     try:
         history = [{"role": m.role, "content": m.content} for m in req.history]
         result = chatbot.chat_with_history(req.message, history)

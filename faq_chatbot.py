@@ -31,44 +31,44 @@ class BuildRightChatbot:
             data_path: Path to the JSON file containing FAQ data
             api_key: Anthropic API key (optional, can be loaded from .env)
         """
-        print("🚀 Initializing BuildRight Chatbot...")
-        
+        print("Initializing BuildRight Chatbot...")
+
         # Load environment variables
         load_dotenv()
-        
+
         # Set API key
         self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
         if not self.api_key:
             raise ValueError("ANTHROPIC_API_KEY not found. Please set it in .env file or pass it as parameter.")
-        
+
         # Load FAQ data
         self.faq_data = self._load_faq_data(data_path)
-        print(f"✅ Loaded {len(self.faq_data)} FAQ entries")
-        
+        print(f"Loaded {len(self.faq_data)} FAQ entries")
+
         # Initialize embeddings model
-        print("📦 Loading embedding model...")
+        print("Loading embedding model...")
         self.embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
             model_kwargs={'device': 'cpu'}
         )
-        
+
         # Create vector store
-        print("🗄️ Creating vector store...")
+        print("Creating vector store...")
         self.vectorstore = self._create_vectorstore()
-        
+
         # Initialize LLM
-        print("🤖 Initializing Claude LLM...")
+        print("Initializing Claude LLM...")
         self.llm = ChatAnthropic(
             model="claude-sonnet-4-20250514",
             anthropic_api_key=self.api_key,
             temperature=0.3,
             max_tokens=1024
         )
-        
+
         # Create retrieval chain
         self.qa_chain = self._create_qa_chain()
-        
-        print("✅ Chatbot initialization complete!\n")
+
+        print("Chatbot initialization complete!")
     
     def _load_faq_data(self, data_path: str) -> List[Dict]:
         """Load FAQ data from JSON file"""
