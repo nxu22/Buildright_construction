@@ -69,6 +69,15 @@ def root():
 def health():
     return {"status": "healthy"}
 
+@app.get("/debug-email")
+def debug_email():
+    """Temporary: confirm env vars are set without exposing values. DELETE before going public."""
+    return {
+        "RESEND_API_KEY": "set" if os.getenv("RESEND_API_KEY") else "MISSING",
+        "FROM_EMAIL":     os.getenv("FROM_EMAIL") or "MISSING (will fall back to onboarding@resend.dev sandbox — client emails will fail)",
+        "OWNER_EMAIL":    "set" if os.getenv("OWNER_EMAIL") else "MISSING",
+    }
+
 @app.post("/chat")
 def chat(req: ChatRequest):
     """Main chat endpoint"""
@@ -84,53 +93,76 @@ def chat(req: ChatRequest):
 
 @app.post("/register-lead")
 def register_lead(req: RegisterLeadRequest):
-    """Save name/email immediately and send client a confirmation email."""
+    """Send client a confirmation email immediately when they submit their contact info."""
     print(f"Registering lead: {req.name} | {req.email}")
 
     api_key = os.getenv("RESEND_API_KEY")
-    from_email = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
+    from_email = os.getenv("FROM_EMAIL")
 
-    if api_key:
-        try:
-            resend.api_key = api_key
-            resend.Emails.send({
-                "from": from_email,
-                "to": req.email,
-                "subject": "Thanks for reaching out — BuildRight Renovations",
-                "html": f"""
+    if not api_key:
+        raise HTTPException(status_code=500, detail="RESEND_API_KEY is not configured")
+    if not from_email:
+        raise HTTPException(status_code=500, detail="FROM_EMAIL is not configured — cannot send from sandbox to arbitrary clients")
+
+    resend.api_key = api_key
+    result = resend.Emails.send({
+        "from": from_email,
+        "to": req.email,
+        "subject": "Thanks for reaching out — BuildRight Renovations",
+        "html": f"""
 <h2>Hi {req.name}, thanks for connecting!</h2>
 <p>We received your message through the BuildRight virtual assistant.</p>
 <p>A member of our team will follow up with you within <b>one business day</b> to discuss your project.</p>
 <p>In the meantime, feel free to reply to this email with any additional details about what you have in mind.</p>
 <br>
 <p>— The BuildRight Team</p>
-<p style="color:#888;font-size:12px">BuildRight Renovations · GTA's trusted renovation experts</p>
+<p style="color:#888;font-size:12px">BuildRight Renovations &middot; GTA's trusted renovation experts</p>
 """,
-            })
-        except Exception as e:
-            print(f"Client email error: {e}")
-
-    return {"success": True}
+    })
+    print(f"Client email sent: {result}")
+    return {"success": True, "resend_id": getattr(result, 'id', str(result))}
 
 
 @app.post("/submit-lead")
 def submit_lead(req: LeadRequest):
-    """Send owner the full conversation summary when chat closes."""
-    print(f"Full lead summary received: {req.name} | {req.email}")
+    """When chat closes: AI-summarize the conversation and email the owner."""
+    print(f"Lead summary received: {req.name} | {req.email}")
 
     api_key = os.getenv("RESEND_API_KEY")
     owner_email = os.getenv("OWNER_EMAIL")
-    from_email = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
+    from_email = os.getenv("FROM_EMAIL")
 
-    if api_key and owner_email:
-        try:
-            resend.api_key = api_key
-            submitted_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-            _send_owner_email(req, owner_email, from_email, submitted_at)
-        except Exception as e:
-            print(f"Owner email error: {e}")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="RESEND_API_KEY is not configured")
+    if not owner_email:
+        raise HTTPException(status_code=500, detail="OWNER_EMAIL is not configured")
+    if not from_email:
+        raise HTTPException(status_code=500, detail="FROM_EMAIL is not configured")
 
-    return {"success": True, "message": "Got it! We'll be in touch within one business day."}
+    ai_summary = chatbot.summarize_conversation(req.conversation_summary)
+    print(f"AI summary generated:\n{ai_summary}")
+
+    submitted_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    resend.api_key = api_key
+    result = resend.Emails.send({
+        "from": from_email,
+        "to": owner_email,
+        "subject": f"New Lead from BuildRight Assistant — {req.name}",
+        "html": f"""
+<h2>New lead from BuildRight chatbot</h2>
+<table cellpadding="6">
+  <tr><td><b>Name</b></td><td>{req.name}</td></tr>
+  <tr><td><b>Email</b></td><td><a href="mailto:{req.email}">{req.email}</a></td></tr>
+  <tr><td><b>Submitted</b></td><td>{submitted_at}</td></tr>
+</table>
+<h3>What the client wants</h3>
+<div style="background:#f5f5f5;padding:14px;border-radius:6px;white-space:pre-wrap">{ai_summary}</div>
+<h3 style="margin-top:24px;color:#888;font-size:13px">Full transcript</h3>
+<pre style="background:#fafafa;padding:12px;border-radius:6px;font-size:12px;color:#555">{req.conversation_summary}</pre>
+""",
+    })
+    print(f"Owner email sent: {result}")
+    return {"success": True, "resend_id": getattr(result, 'id', str(result))}
 
 
 @app.post("/quote")
@@ -147,19 +179,3 @@ def quote(req: QuoteRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def _send_owner_email(req: LeadRequest, owner_email: str, from_email: str, submitted_at: str):
-    resend.Emails.send({
-        "from": from_email,
-        "to": owner_email,
-        "subject": f"New Lead from BuildRight Assistant — {req.name}",
-        "html": f"""
-<h2>New lead from BuildRight chatbot</h2>
-<table>
-  <tr><td><b>Name</b></td><td>{req.name}</td></tr>
-  <tr><td><b>Email</b></td><td>{req.email}</td></tr>
-  <tr><td><b>Submitted</b></td><td>{submitted_at}</td></tr>
-</table>
-<h3>Conversation summary</h3>
-<pre style="background:#f5f5f5;padding:12px;border-radius:6px">{req.conversation_summary}</pre>
-""",
-    })

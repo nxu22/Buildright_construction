@@ -244,6 +244,35 @@ Reply naturally and helpfully. Ask only one question at a time. Respond in the s
             "source_questions": [doc.metadata.get("question", "") for doc in docs]
         }
 
+    def summarize_conversation(self, raw_transcript: str) -> str:
+        """
+        Use Claude to turn a raw chat transcript into a clean owner-facing summary.
+        Returns a short paragraph describing what the client wants.
+        """
+        from langchain.schema import HumanMessage
+        prompt = f"""You are reading a conversation between a potential renovation client and the BuildRight virtual assistant.
+
+Extract and summarize the key details the owner needs to follow up:
+- What type of project the client wants (kitchen, bathroom, basement, etc.)
+- Approximate size or scope if mentioned
+- Budget range or tier preference if mentioned
+- Timeline or urgency if mentioned
+- Any other specific details or concerns raised
+- Client's tone / how ready they seem to move forward
+
+Be concise — 3 to 6 bullet points. If a detail wasn't mentioned, omit it.
+
+Transcript:
+{raw_transcript}
+
+Summary (bullet points):"""
+
+        try:
+            response = self.llm.invoke([HumanMessage(content=prompt)])
+            return response.content.strip()
+        except Exception as e:
+            return f"(Summary unavailable: {e})\n\nRaw transcript:\n{raw_transcript}"
+
     def chat(self):
         """Start interactive chat session"""
         print("="*70)
