@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -15,8 +15,11 @@ export default function ChatWidget({ onClose }) {
   const [leadName, setLeadName] = useState('')
   const [leadEmail, setLeadEmail] = useState('')
   const [leadDone, setLeadDone] = useState(false)
+  const [leadInfo, setLeadInfo] = useState(null)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const messagesRef = useRef(messages)
+  useEffect(() => { messagesRef.current = messages }, [messages])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -75,33 +78,47 @@ export default function ChatWidget({ onClose }) {
 
   const submitLead = async () => {
     if (!leadName.trim() || !leadEmail.trim()) return
-    const summary = messages
-      .slice(-8)
-      .map(m => `${m.role === 'user' ? 'Client' : 'Agent'}: ${m.content}`)
-      .join('\n')
+    const info = { name: leadName, email: leadEmail }
+    setLeadInfo(info)
+    setLeadDone(true)
+    setShowLead(false)
+    // Send client confirmation immediately
     try {
-      await fetch(`${API_URL}/submit-lead`, {
+      await fetch(`${API_URL}/register-lead`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: leadName,
-          email: leadEmail,
-          conversation_summary: summary,
-        }),
+        body: JSON.stringify(info),
       })
     } catch {
       // best-effort
     }
-    setLeadDone(true)
-    setShowLead(false)
     setMessages(prev => [
       ...prev,
       {
         role: 'assistant',
-        content: `Thanks, ${leadName}! We've got your details and will follow up at ${leadEmail} within one business day. Looking forward to talking about your project!`,
+        content: `Thanks, ${leadName}! We've sent a confirmation to ${leadEmail} and will follow up within one business day. Feel free to keep asking questions!`,
       },
     ])
   }
+
+  const handleClose = useCallback(async () => {
+    // Send owner the full conversation when chat closes
+    if (leadInfo) {
+      const summary = messagesRef.current
+        .map(m => `${m.role === 'user' ? 'Client' : 'Agent'}: ${m.content}`)
+        .join('\n')
+      try {
+        await fetch(`${API_URL}/submit-lead`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: leadInfo.name, email: leadInfo.email, conversation_summary: summary }),
+        })
+      } catch {
+        // best-effort
+      }
+    }
+    onClose()
+  }, [leadInfo, onClose])
 
 
   return (
@@ -112,7 +129,7 @@ export default function ChatWidget({ onClose }) {
           <span className="cw-dot" />
           <span className="cw-title">BuildRight</span>
         </div>
-        <button className="cw-close" onClick={onClose} aria-label="Close">
+        <button className="cw-close" onClick={handleClose} aria-label="Close">
           ×
         </button>
       </div>

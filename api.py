@@ -49,6 +49,10 @@ class LeadRequest(BaseModel):
     email: str
     conversation_summary: str
 
+class RegisterLeadRequest(BaseModel):
+    name: str
+    email: str
+
 class QuoteRequest(BaseModel):
     project_type: str   # kitchen | bathroom | basement | full_renovation
     sqft: float
@@ -78,10 +82,41 @@ def chat(req: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/register-lead")
+def register_lead(req: RegisterLeadRequest):
+    """Save name/email immediately and send client a confirmation email."""
+    print(f"Registering lead: {req.name} | {req.email}")
+
+    api_key = os.getenv("RESEND_API_KEY")
+    from_email = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
+
+    if api_key:
+        try:
+            resend.api_key = api_key
+            resend.Emails.send({
+                "from": from_email,
+                "to": req.email,
+                "subject": "Thanks for reaching out — BuildRight Renovations",
+                "html": f"""
+<h2>Hi {req.name}, thanks for connecting!</h2>
+<p>We received your message through the BuildRight virtual assistant.</p>
+<p>A member of our team will follow up with you within <b>one business day</b> to discuss your project.</p>
+<p>In the meantime, feel free to reply to this email with any additional details about what you have in mind.</p>
+<br>
+<p>— The BuildRight Team</p>
+<p style="color:#888;font-size:12px">BuildRight Renovations · GTA's trusted renovation experts</p>
+""",
+            })
+        except Exception as e:
+            print(f"Client email error: {e}")
+
+    return {"success": True}
+
+
 @app.post("/submit-lead")
 def submit_lead(req: LeadRequest):
-    """Collect lead info and send email notifications via Resend."""
-    print(f"New lead: {req.name} | {req.email}")
+    """Send owner the full conversation summary when chat closes."""
+    print(f"Full lead summary received: {req.name} | {req.email}")
 
     api_key = os.getenv("RESEND_API_KEY")
     owner_email = os.getenv("OWNER_EMAIL")
@@ -91,10 +126,9 @@ def submit_lead(req: LeadRequest):
         try:
             resend.api_key = api_key
             submitted_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-
             _send_owner_email(req, owner_email, from_email, submitted_at)
         except Exception as e:
-            print(f"Email error: {e}")
+            print(f"Owner email error: {e}")
 
     return {"success": True, "message": "Got it! We'll be in touch within one business day."}
 
