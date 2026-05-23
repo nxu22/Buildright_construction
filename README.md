@@ -1,4 +1,4 @@
-# BuildRight Renovations — AI Chatbot Demo
+# BuildRight Renovations - AI Chatbot Demo
 
 **Live site:** https://buildrightforconstruction.netlify.app/
 **Backend API:** https://buildrightconstruction-production.up.railway.app/
@@ -30,7 +30,7 @@ Built as a portfolio project to demonstrate conversational AI integration, lead 
 - **Lead capture** -- inline contact form; client gets a confirmation email, owner gets an AI-summarized lead email
 - **Reliable lead delivery** -- navigator.sendBeacon on page exit captures leads even when the user closes the browser tab without clicking the close button
 - **Duplicate prevention** -- client-side in-flight lock + server-side 2-minute session dedup so the owner receives exactly one email per conversation
-- **Hand-drawn UI** -- Caveat handwritten font, coral/mint/forest-green palette, SVG house and tool sketches inspired by David Hockney
+- **Hand-drawn UI** -- Caveat handwritten font, coral/mint/forest-green palette, SVG house and tool sketches
 
 ---
 
@@ -43,12 +43,6 @@ Built as a portfolio project to demonstrate conversational AI integration, lead 
 | AI / LLM | Anthropic Claude via LangChain |
 | Vector search | ChromaDB + sentence-transformers (all-MiniLM-L6-v2) |
 | Email | Resend (custom domain buildrightca.space) |
-
----
-
-## Project structure
-
-
 
 ---
 
