@@ -1,4 +1,4 @@
-# BuildRight Renovations - AI Chatbot Demo
+# BuildRight Renovations - AI AGENT
 
 **Live site:** https://buildrightforconstruction.netlify.app/
 **Backend API:** https://buildrightconstruction-production.up.railway.app/
@@ -7,7 +7,7 @@
 
 ## What this is
 
-A full-stack AI chatbot demo built for a fictional residential renovation company in the Greater Toronto Area. Potential clients land on the page, ask questions about services and pricing, get instant AI-powered answers, and leave their contact details -- at which point the business owner receives a summarized lead email automatically.
+A full-stack AI AGENT built for a fictional residential renovation company in the Greater Toronto Area. Potential clients land on the page, ask questions about services and pricing, get instant AI-powered answers, and leave their contact details -- at which point the business owner receives a summarized lead email automatically.
 
 Built as a portfolio project to demonstrate conversational AI integration, lead capture, and modern web deployment.
 
