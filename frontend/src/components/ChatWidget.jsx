@@ -16,10 +16,17 @@ export default function ChatWidget({ onClose }) {
   const [leadEmail, setLeadEmail] = useState('')
   const [leadDone, setLeadDone] = useState(false)
   const [leadInfo, setLeadInfo] = useState(null)
-  const bottomRef = useRef(null)
-  const inputRef = useRef(null)
-  const messagesRef = useRef(messages)
+
+  const bottomRef   = useRef(null)
+  const inputRef    = useRef(null)
+  const messagesRef = useRef(messages)          // always-current transcript
+  const leadInfoRef = useRef(null)              // always-current leadInfo for listeners
+  const leadSentRef = useRef(false)             // client-side in-flight lock
+  const sessionId   = useRef(crypto.randomUUID()) // stable per widget mount
+
+  // Keep refs in sync with state
   useEffect(() => { messagesRef.current = messages }, [messages])
+  useEffect(() => { leadInfoRef.current = leadInfo },  [leadInfo])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -29,6 +36,63 @@ export default function ChatWidget({ onClose }) {
     inputRef.current?.focus()
   }, [])
 
+  // ── Core send function ──────────────────────────────
+  // useBeacon=true  → navigator.sendBeacon (survives tab/page close)
+  // useBeacon=false → fetch (for normal close-button path)
+  // Client guard: leadSentRef prevents concurrent/duplicate fires from the
+  // same browser regardless of which trigger fires first.
+  const sendOwnerEmail = useCallback((useBeacon = false) => {
+    const info = leadInfoRef.current
+    if (!info) return                 // no lead captured yet — nothing to send
+    if (leadSentRef.current) return   // already sent or in-flight — bail
+    leadSentRef.current = true        // lock before any async work
+
+    const transcript = messagesRef.current
+      .map(m => `${m.role === 'user' ? 'Client' : 'Agent'}: ${m.content}`)
+      .join('\n')
+
+    const payload = JSON.stringify({
+      name:                 info.name,
+      email:                info.email,
+      conversation_summary: transcript,
+      session_id:           sessionId.current,
+    })
+
+    const url = `${API_URL}/submit-lead`
+
+    if (useBeacon) {
+      // sendBeacon survives page close; Blob sets Content-Type: application/json
+      // which FastAPI parses identically to a regular fetch POST
+      navigator.sendBeacon(url, new Blob([payload], { type: 'application/json' }))
+    } else {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      }).catch(() => {}) // best-effort; errors are swallowed intentionally
+    }
+  }, []) // stable: reads only from refs and module-level constant
+
+  // ── Page-exit listeners ─────────────────────────────
+  // visibilitychange fires when user switches tabs or closes the browser.
+  // beforeunload fires just before the page unloads.
+  // Both use beacon so the request survives the page lifecycle.
+  // leadSentRef ensures only the first trigger that fires actually sends.
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') sendOwnerEmail(true)
+    }
+    const onUnload = () => sendOwnerEmail(true)
+
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('beforeunload', onUnload)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      window.removeEventListener('beforeunload', onUnload)
+    }
+  }, [sendOwnerEmail])
+
+  // ── Chat logic ──────────────────────────────────────
   const send = async () => {
     const text = input.trim()
     if (!text || isTyping) return
@@ -52,7 +116,6 @@ export default function ChatWidget({ onClose }) {
       const botMsg = { role: 'assistant', content: data.reply }
       setMessages(prev => {
         const updated = [...prev, botMsg]
-        // Show lead form after the very first exchange (welcome + user + bot = 3 msgs)
         const userCount = updated.filter(m => m.role === 'user').length
         if (userCount === 1 && !leadDone) {
           setTimeout(() => setShowLead(true), 600)
@@ -82,7 +145,6 @@ export default function ChatWidget({ onClose }) {
     setLeadInfo(info)
     setLeadDone(true)
     setShowLead(false)
-    // Send client confirmation immediately
     try {
       await fetch(`${API_URL}/register-lead`, {
         method: 'POST',
@@ -101,29 +163,15 @@ export default function ChatWidget({ onClose }) {
     ])
   }
 
-  const handleClose = useCallback(async () => {
-    // Send owner the full conversation when chat closes
-    if (leadInfo) {
-      const summary = messagesRef.current
-        .map(m => `${m.role === 'user' ? 'Client' : 'Agent'}: ${m.content}`)
-        .join('\n')
-      try {
-        await fetch(`${API_URL}/submit-lead`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: leadInfo.name, email: leadInfo.email, conversation_summary: summary }),
-        })
-      } catch {
-        // best-effort
-      }
-    }
+  // Close button: use fetch (page is still alive), then unmount
+  const handleClose = useCallback(() => {
+    sendOwnerEmail(false)
     onClose()
-  }, [leadInfo, onClose])
+  }, [sendOwnerEmail, onClose])
 
-
+  // ── Render ──────────────────────────────────────────
   return (
     <div className="cw">
-      {/* Header */}
       <div className="cw-header">
         <div className="cw-header-left">
           <span className="cw-dot" />
@@ -134,7 +182,6 @@ export default function ChatWidget({ onClose }) {
         </button>
       </div>
 
-      {/* Messages */}
       <div className="cw-body">
         {messages.map((msg, i) => (
           <div key={i} className={`msg-row ${msg.role}`}>
@@ -152,7 +199,6 @@ export default function ChatWidget({ onClose }) {
           </div>
         )}
 
-        {/* Lead form inline */}
         {showLead && !leadDone && (
           <div className="lead-card">
             <p className="lead-title">Let us follow up with you</p>
@@ -181,7 +227,6 @@ export default function ChatWidget({ onClose }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input area */}
       <div className="cw-footer">
         <div className="input-row">
           <textarea

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import resend
 from dotenv import load_dotenv
 
@@ -34,6 +34,28 @@ chatbot = BuildRightChatbot(
 print("Chatbot ready.")
 
 
+# ── Server-side dedup ────────────────────────────────
+# Maps session_id → datetime of last successful send.
+# Cleared on restart (acceptable for Railway single-instance).
+# If you move to multi-instance, replace with Redis.
+_sent_sessions: dict[str, datetime] = {}
+_DEDUP_WINDOW = timedelta(minutes=2)
+
+def _prune_and_check(session_id: str) -> bool:
+    """
+    Prune stale entries, then return True if this session_id was sent
+    within the dedup window (meaning: skip this send).
+    """
+    if not session_id:
+        return False  # no session_id → never deduplicate
+    now = datetime.now(timezone.utc)
+    cutoff = now - _DEDUP_WINDOW
+    stale = [k for k, v in _sent_sessions.items() if v < cutoff]
+    for k in stale:
+        del _sent_sessions[k]
+    last = _sent_sessions.get(session_id)
+    return last is not None and (now - last) < _DEDUP_WINDOW
+
 # ── Data models ──────────────────────────────────────
 
 class Message(BaseModel):
@@ -48,6 +70,7 @@ class LeadRequest(BaseModel):
     name: str
     email: str
     conversation_summary: str
+    session_id: str = ""  # empty string = skip dedup (old clients / sendBeacon fallback)
 
 class RegisterLeadRequest(BaseModel):
     name: str
@@ -125,8 +148,17 @@ def register_lead(req: RegisterLeadRequest):
 
 @app.post("/submit-lead")
 def submit_lead(req: LeadRequest):
-    """When chat closes: AI-summarize the conversation and email the owner."""
-    print(f"Lead summary received: {req.name} | {req.email}")
+    """Send AI-summarized lead email to owner. Deduplicates by session_id."""
+    print(f"Lead received: {req.name} | {req.email} | session={req.session_id or 'none'}")
+
+    if _prune_and_check(req.session_id):
+        print(f"Dedup: session {req.session_id} already sent within window, skipping")
+        return {"success": True, "deduped": True}
+
+    # Record timestamp before sending so a concurrent request arriving
+    # while the email is being built also hits the dedup check
+    if req.session_id:
+        _sent_sessions[req.session_id] = datetime.now(timezone.utc)
 
     api_key = os.getenv("RESEND_API_KEY")
     owner_email = os.getenv("OWNER_EMAIL")
