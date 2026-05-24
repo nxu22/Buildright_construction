@@ -1,9 +1,6 @@
 # BuildRight Renovations - AI AGENT
 
-**Live site:** https://buildrightforconstruction.netlify.app/
-**Backend API:** https://buildrightconstruction-production.up.railway.app/
-
----
+This is a full-stack AI chatbot demo built with [React](https://react.dev/) + [FastAPI](https://fastapi.tiangolo.com/), powered by [Claude](https://www.anthropic.com/) and RAG (ChromaDB + sentence-transformers).
 
 ## What this is
 
@@ -48,13 +45,44 @@ Built as a portfolio project to demonstrate conversational AI integration, lead 
 
 ## Local development
 
+First, run the backend server:
+
 ```bash
-# Backend
 pip install -r requirements.txt
 uvicorn api:app --reload --port 8000
+```
 
-# Frontend (separate terminal)
+Then, in a separate terminal, run the frontend:
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+Open [http://localhost:5173](http://localhost:5173) with your browser to see the result.
+
+You can start editing the frontend by modifying `frontend/src/App.jsx`. The page auto-updates as you edit the file.
+
+The FastAPI backend lives in `api.py` and the chatbot logic in `faq_chatbot.py`.
+
+## Live Demo
+
+- **Frontend:** [buildrightforconstruction.netlify.app](https://buildrightforconstruction.netlify.app/)
+- **Backend API:** [buildrightconstruction-production.up.railway.app](https://buildrightconstruction-production.up.railway.app/)
+
+## Learn More
+
+To learn more about the technologies used:
+
+- [React Documentation](https://react.dev/learn)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Anthropic Claude API](https://docs.anthropic.com/)
+- [ChromaDB Documentation](https://docs.trychroma.com/)
+- [LangChain Documentation](https://python.langchain.com/)
+- [Resend Documentation](https://resend.com/docs)
+
+## Deploy
+
+- Frontend is deployed on [Netlify](https://www.netlify.com/)
+- Backend is deployed on [Railway](https://railway.app/)

@@ -334,10 +334,10 @@ def main():
     """Main function to run the chatbot"""
     
     # Path to FAQ data - using relative path for cross-platform compatibility
-    data_path = "Ecommerce_FAQ_Chatbot_dataset.json"
-    
+    data_path = "FAQ_Chatbot_dataset.json"
+
     # Alternative: if file is in different location, specify full path
-    # data_path = "/path/to/Ecommerce_FAQ_Chatbot_dataset.json"
+    # data_path = "/path/to/FAQ_Chatbot_dataset.json"
     
     try:
         # Initialize chatbot
@@ -372,7 +372,7 @@ def main():
         
     except FileNotFoundError:
         print(f"❌ Error: FAQ data file not found at '{data_path}'")
-        print("Please ensure the Ecommerce_FAQ_Chatbot_dataset.json file is in the correct location.")
+        print("Please ensure the FAQ_Chatbot_dataset.json file is in the correct location.")
     except Exception as e:
         print(f"❌ Error initializing chatbot: {str(e)}")
         print("\nPlease ensure:")
